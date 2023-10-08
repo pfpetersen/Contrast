@@ -2,16 +2,17 @@
 
 <html>
 <title>Contrast Simulator</title>
-<head><script src="https://cdn.plot.ly/plotly-2.14.0.min.js"></script>
+<head><script src="https://cdn.plot.ly/plotly-2.26.0.min.js" charset="utf-8"></script>
 </head>
 <body>
-Actual Contrast Locations (Aneurym colored)
+Actual Contrast Locations (Small aneurym colored RED)
 <div id="myDiv"></div>
 <p>
-Connections based on proximity (300 points numbers 0 to 299):<br>
+Connections based on proximity (Contrast barcodes designated: 0 to 299):<br>
 <textarea id="Proximity"></textarea>
 <p>
-Simple Recontruction Algorithm using above connection list (pre-colored red/grey to assess for accuracy of algorithm):
+Simple Recontruction Algorithm using above connection list (pre-colored red/grey to assess for accuracy of algorithm):<br>
+Several iterations may be necessary:	
  <button onclick="tenit()">Run 10 iterations</button> <br>
 <div id="myDiv2"></div>
   
@@ -22,19 +23,19 @@ var SpC = 20; //Number of 'Signals Per Contrast' container
 
 //-------Build the environment--------
 // Example tube with sphere (aneurym simulation)
-sR = 2.5; //radius of aneurym (sphere shaped)
-H = 10; //height of vessel
+sR = 1.5; //radius of aneurym (sphere shaped)
+H = 20; //height of vessel
 R = 0.8; //width of vessel
 ptc = 300; // contrast points
 
 let array = Array(3).fill().map(() => Array(ptc).fill(0));
-sphc = [0,sR,H/2];
+sphc = [0,sR,0];
 for (let n = 0; n < ptc; n++) {
 var d, d2, x, y, z;
 	do {
         x = Math.random() * (2*sR+1) - 1.0; //center on zero
         y = Math.random() * (2*sR+1) - 1.0;
-        z = Math.random() * H;
+        z = Math.random() * H - H/2;
 		d = Math.sqrt(x*x + y*y);
 		d2 = dist(0,1,[[x,sphc[0]],[y,sphc[1]],[z,sphc[2]]]);
 	} while((d > R) && (d2 > sR));
@@ -138,8 +139,6 @@ CR[2] = CR[2].map(a => a - mz);
 
 var temp = Math.max(...CR.flat()); var temp2 = Math.abs(Math.min(...CR.flat()));
 var max_list = Math.max(temp, temp2);
-//CR= CR.map(a => a.map(b => (b-(max_list/2*(2*(temp>temp2)-1)))/max_list*10000 + 0.1*Math.random()));
-//CR= CR.map(a => a.map(b => (b)/max_list*2000 + Math.random()));
 };
 
 function dist (i,j,arr) { return Math.sqrt(Math.pow(arr[0][i]-arr[0][j],2) + Math.pow(arr[1][i]-arr[1][j],2) + Math.pow(arr[2][i]-arr[2][j],2))};
@@ -152,18 +151,16 @@ for (let n = 0; n < ptc; n++) {
 var textarea = document.getElementById("Proximity");
 textarea.value = CL.join("\n");
 
-//var out = l.reduce((prev, curr) => Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev);
-//Vs[l.indexOf(out)]
-//Cx[l.indexOf(out)] 
 
+var rmin1 = Math.min(...array.flat())
+var rmax1 = Math.max(...array.flat())
+var rmin2 = Math.min(...CR.flat())
+var rmax2 = Math.max(...CR.flat())
 
 var trace1 = {
   x: array[0],
   y: array[1],
   z: array[2],
-  xaxis: 'x',
-  yaxis: 'y',
-  zaxis: 'z',
     mode: 'markers',
   marker: {
     size: 4,
@@ -176,9 +173,6 @@ var trace2 = {
   x: CR[0],
   y: CR[1],
   z: CR[2],
-  xaxis: 'x',
-  yaxis: 'y',
-  zaxis: 'z',
     mode: 'markers',
   marker: {
     size: 4,
@@ -189,24 +183,50 @@ var trace2 = {
 
 var data2 = [trace2];
 var data1 = [trace1];
-var layout = {     "width": 600,
-    "height": 600,
-	"scene": {
-"xaxis": {
-    "visible": false,  "showgrid": false,"zeroline": false
-},
-'yaxis': {
-    'visible': false,  
-},
-'zaxis': {
-    'visible': false,  
-},}
-};
-
-Plotly.newPlot('myDiv', data1, layout);
-Plotly.newPlot('myDiv2', data2, layout);
+var layout1 = {
+  width: 600,
+  height: 600,
+  scene: {
+    aspectmode: 'manual', // make all the axis scale to the same total range
+    xaxis: {
+      visible: false, // make the x axis invisible
+      range: [rmin1, rmax1] // specify the x axis range
+    },
+    yaxis: {
+      visible: false, // make the y axis invisible
+      range: [rmin1, rmax1] // specify the y axis range
+    },
+    zaxis: {
+      visible: false, // make the z axis invisible
+      range: [rmin1, rmax1] // specify the z axis range
+    }
+  }
+}
+var layout2 = {
+  width: 600,
+  height: 600,
+  scene: {
+    aspectmode: 'manual', // make all the axis scale to the same total range
+    xaxis: {
+      visible: false, // make the x axis invisible
+      range: [rmin2, rmax2] // specify the x axis range
+    },
+    yaxis: {
+      visible: false, // make the y axis invisible
+      range: [rmin2, rmax2] // specify the y axis range
+    },
+    zaxis: {
+      visible: false, // make the z axis invisible
+      range: [rmin2, rmax2] // specify the z axis range
+    }
+  }
+}
+Plotly.newPlot('myDiv', data1, layout1);
+Plotly.newPlot('myDiv2', data2, layout2);
 
 function draw() {
+rmin2 = Math.min(...CR.flat())
+rmax2 = Math.max(...CR.flat())
 var trace2 = {
   x: CR[0],
   y: CR[1],
@@ -221,8 +241,27 @@ var trace2 = {
   }
   , type: 'scatter3d'
 };
+var layout2 = {
+  width: 600,
+  height: 600,
+  scene: {
+    aspectmode: 'manual', // make all the axis scale to the same total range
+    xaxis: {
+      visible: false, // make the x axis invisible
+      range: [rmin2, rmax2] // specify the x axis range
+    },
+    yaxis: {
+      visible: false, // make the y axis invisible
+      range: [rmin2, rmax2] // specify the y axis range
+    },
+    zaxis: {
+      visible: false, // make the z axis invisible
+      range: [rmin2, rmax2] // specify the z axis range
+    }
+  }
+}
 var data2 = [trace2];
-Plotly.newPlot('myDiv2', data2, layout);
+Plotly.newPlot('myDiv2', data2, layout2);
 };
 </script>
 </body>
